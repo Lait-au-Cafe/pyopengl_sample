@@ -103,9 +103,9 @@ class Viewer:
         # Prepare Buffers
         #========================================
         self.model_vertices = [
-                0.25, 0.5, 0.0, 
-                -0.25, 0.5, 0.0, 
-                0.5, -0.5, 0.0, 
+                 0.5,  0.5, 0.0, 
+                -0.5,  0.5, 0.0, 
+                 0.5, -0.5, 0.0, 
                 -0.5, -0.5, 0.0]
 
         # Generate & bind buffer
@@ -124,10 +124,10 @@ class Viewer:
             sys.exit()
 
         self.model_uvs = [
-                0.0, 1.0, 
-                0.0, 0.0, 
                 1.0, 1.0, 
-                1.0, 0.0]
+                0.0, 1.0, 
+                1.0, 0.0, 
+                0.0, 0.0]
 
         # Generate & bind buffer
         uv_buffer = gl.glGenBuffers(1)
@@ -153,7 +153,7 @@ class Viewer:
         gl.glVertexAttribPointer(0, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
         gl.glEnableVertexAttribArray(1)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uv_buffer)
-        gl.glVertexAttribPointer(1, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+        gl.glVertexAttribPointer(1, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
 
         gl.glBindVertexArray(0)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, 0)
@@ -162,14 +162,12 @@ class Viewer:
         # Prepare Texture
         #========================================
         # Load image
-        image_filename = "img/cyan_mini.png"
+        image_filename = "img/invader.png"
         image = cv2.imread(image_filename)
         if image is None:
             print("[CV Error] Cannot open image: {}".format(image_filename))
             sys.exit()
-        print(image)
         image = cv2.flip(image, 0)
-        #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Create texture
         self.texture = gl.glGenTextures(1)
@@ -202,6 +200,7 @@ class Viewer:
         """
         # Initialize
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+        #gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE);
 
         # Bind program
         gl.glUseProgram(self.shader_program)
@@ -213,13 +212,13 @@ class Viewer:
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
 
         # Draw
-        #gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, len(self.model_vertices))
+        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, len(self.model_vertices) // 3)
 
-        display_image = gl.glGetTexImage(gl.GL_TEXTURE_2D, 0, gl.GL_BGR, gl.GL_FLOAT)
-        width = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_WIDTH)
-        height = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_HEIGHT)
-        cv2.imshow("", np.array(display_image))
-        if cv2.waitKey(0): return False
+        #display_image = gl.glGetTexImage(gl.GL_TEXTURE_2D, 0, gl.GL_BGR, gl.GL_FLOAT)
+        #width = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_WIDTH)
+        #height = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_HEIGHT)
+        #cv2.imshow("", np.array(display_image))
+        #if cv2.waitKey(0): return False
 
         # Unbind
         gl.glBindVertexArray(0)
