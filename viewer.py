@@ -162,18 +162,18 @@ class Viewer:
         # Prepare Texture
         #========================================
         # Load image
-        image_filename = "img/invader.png"
+        image_filename = "img/cyan_mini.png"
         image = cv2.imread(image_filename)
         if image is None:
             print("[CV Error] Cannot open image: {}".format(image_filename))
             sys.exit()
+        print(image)
         image = cv2.flip(image, 0)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Create texture
         self.texture = gl.glGenTextures(1)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
-        gl.glGetTexImage(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, gl.GL_FLOAT, image)
 
         # Generate texture
         gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
@@ -184,7 +184,7 @@ class Viewer:
                 image.shape[1],  # the width of texture
                 image.shape[0],  # the height of texture
                 0,  # border (this value must be 0)
-                gl.GL_RGBA,  # the format of the pixel data
+                gl.GL_BGR,  # the format of the pixel data
                 gl.GL_UNSIGNED_BYTE,  # the type of pixel data
                 image)  # a pointer to the image
 
@@ -213,18 +213,13 @@ class Viewer:
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
 
         # Draw
-        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, len(self.model_vertices))
+        #gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, len(self.model_vertices))
 
-        #display_image = gl.glGetTexImage(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, gl.GL_FLOAT)
-        #width = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_WIDTH)
-        #height = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_HEIGHT)
-        #display_image = cv2.flip(
-        #                    cv2.cvtColor(
-        #                        display_image
-        #                            .transpose(2, 1, 0)
-        #                            .reshape(height, width, 3), cv2.COLOR_RGB2BGR), 0)
-        #cv2.imshow("", np.array(display_image))
-        #if cv2.waitKey(0): return False
+        display_image = gl.glGetTexImage(gl.GL_TEXTURE_2D, 0, gl.GL_BGR, gl.GL_FLOAT)
+        width = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_WIDTH)
+        height = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_HEIGHT)
+        cv2.imshow("", np.array(display_image))
+        if cv2.waitKey(0): return False
 
         # Unbind
         gl.glBindVertexArray(0)
