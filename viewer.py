@@ -1,9 +1,20 @@
 import sys
+import dataclasses
 import numpy as np
 import cv2
 import OpenGL.GL as gl
 import glfw
+import glm
 import ctypes
+
+@dataclasses.dataclass
+class CameraProperty:
+            translation: glm.vec3
+            rotation: glm.vec3
+            focal_length: float
+            clipping_distance: glm.vec2
+            field_of_view: float
+
 
 class Viewer:
     @staticmethod
@@ -32,6 +43,16 @@ class Viewer:
 
         return True
 
+    def update_camera_posture(self):
+        pass
+
+    def mouse_callback(self, window, xpos, ypos):
+        #print("[Left: {}] [Right: {}] ({}, {})".format(
+        #    glfw.get_mouse_button(self.window, glfw.MOUSE_BUTTON_LEFT), 
+        #    glfw.get_mouse_button(self.window, glfw.MOUSE_BUTTON_RIGHT), 
+        #    xpos,  ypos))
+        pass
+
     def __init__(self, model_vertices, model_uvmap, texture_filename, window_title):
         """
         @fn __init__()
@@ -47,15 +68,19 @@ class Viewer:
             print("[GLFW Error] Failed to initialize GLFW. ")
             sys.exit()
 
+        #========================================
+        # Prepare Window
+        #========================================
         # Window hints
         glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
         glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
         glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, True)
 
         # Create window
+        self.window_size = (640, 480)
         self.window = glfw.create_window(
-                640,  # width
-                480,  # height
+                self.window_size[0],  # width
+                self.window_size[1],  # height
                 window_title,  # window title
                 None, 
                 None)
@@ -69,6 +94,11 @@ class Viewer:
 
         # Set background color.
         gl.glClearColor(0.0, 1.0, 1.0, 1.0)
+
+        #gl.glViewport(0, 0, 480, 480)
+
+        # Set callback functions
+        glfw.set_cursor_pos_callback(self.window, self.mouse_callback)
 
         #========================================
         # Prepare Buffers
@@ -156,6 +186,36 @@ class Viewer:
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
         #========================================
+        # Prepare Camera Parameter Matrix
+        #========================================
+        self.camera_property = CameraProperty(
+            translation = glm.vec3(0., 0., 10.), 
+            rotation = glm.vec3(0., 0., 0.), 
+            focal_length = 20., 
+            clipping_distance = glm.vec2(0.1, 100.), 
+            field_of_view = 60.)
+
+        # Transform matrix
+        trans = self.camera_property.translation
+        rot = self.camera_property.rotation
+        transform_matrix = glm.mat4(1.)
+        transform_matrix = glm.translate(transform_matrix, trans)
+        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.x), glm.vec3(1., 0., 0.))
+        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.y), glm.vec3(0., 1., 0.))
+        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.z), glm.vec3(0., 0., 1.))
+
+        # Perspective matrix
+        perspective_matrix = glm.perspectiveFovLH_NO(
+                glm.radians(self.camera_property.field_of_view), 
+                self.window_size[0], self.window_size[1], 
+                self.camera_property.clipping_distance[0], 
+                self.camera_property.clipping_distance[1])
+
+        # MVP matrix
+        #mvp_matrix = perspective_matrix * glm.lookAt(glm.vec3(0, 0, -5), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0)) * transform_matrix
+        mvp_matrix = perspective_matrix * transform_matrix
+
+        #========================================
         # Prepare Shader Programs
         #========================================
         is_loaded: bool = False
@@ -187,12 +247,30 @@ class Viewer:
         # Specify uniform variables
         gl.glUseProgram(self.shader_program)
         gl.glUniform1i(gl.glGetUniformLocation(self.shader_program, "sampler"), 0)
+        for i in range(0, len(model_vertices), 3):
+            pos = mvp_matrix * glm.vec4(
+                    model_vertices[i], model_vertices[i+1], model_vertices[i+2],  1.)
+            print(np.array([pos.x, pos.y, pos.z, pos.w]))
+            print(np.array([pos.x, pos.y, pos.z]) / pos.w)
+            print(np.array([pos.x, pos.y]) / pos.z)
+        gl.glUniformMatrix4fv(gl.glGetUniformLocation(self.shader_program, "mvp_matrix"), 
+                1, gl.GL_FALSE, glm.value_ptr(perspective_matrix))
 
     def update(self):
         """
         @fn update()
         @brief Update Buffer
         """
+        #========================================
+        # Mouse and Keyboard response
+        #========================================
+        if glfw.get_key(self.window, glfw.KEY_ESCAPE) == glfw.PRESS:
+            return False
+
+
+        #========================================
+        # Draw new buffer
+        #========================================
         # Initialize
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         #gl.glPolygonMode(gl.GL_FRONT_AND_BACK, gl.GL_LINE);
@@ -223,11 +301,16 @@ class Viewer:
 
 # Sample Code
 if __name__ == "__main__":
+    #model_vertices = [
+    #     0.5,  0.5, 0.0, 
+    #    -0.5,  0.5, 0.0, 
+    #     0.5, -0.5, 0.0, 
+    #    -0.5, -0.5, 0.0]
     model_vertices = [
-         0.25,  0.5, 0.0, 
-        -0.25,  0.5, 0.0, 
-         0.5, -0.5, 0.0, 
-        -0.5, -0.5, 0.0]
+         10,  10, 50.0, 
+        -10,  10, 50.0, 
+         10, -10, 50.0, 
+        -10, -10, 50.0]
 
     model_uvmap = [
         1.0, 1.0, 
