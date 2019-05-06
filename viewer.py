@@ -210,12 +210,6 @@ class Viewer:
         # Draw
         gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, len(model_vertices) // 3)
 
-        #display_image = gl.glGetTexImage(gl.GL_TEXTURE_2D, 0, gl.GL_BGR, gl.GL_FLOAT)
-        #width = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_WIDTH)
-        #height = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_HEIGHT)
-        #cv2.imshow("", np.array(display_image))
-        #if cv2.waitKey(0): return False
-
         # Unbind
         gl.glBindVertexArray(0)
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
