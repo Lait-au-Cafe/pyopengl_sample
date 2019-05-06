@@ -71,35 +71,6 @@ class Viewer:
         gl.glClearColor(0.0, 1.0, 1.0, 1.0)
 
         #========================================
-        # Prepare Shader Programs
-        #========================================
-        is_loaded: bool = False
-
-        vert_shader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
-        is_loaded = Viewer.load_shader(vert_shader, "glsl/vertex.glsl")
-        if not is_loaded: sys.exit()
-
-        frag_shader = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
-        is_loaded = Viewer.load_shader(frag_shader, "glsl/fragment.glsl")
-        if not is_loaded: sys.exit()
-
-        # Create shader program
-        self.shader_program = gl.glCreateProgram()
-
-        # Bind shader objects
-        gl.glAttachShader(self.shader_program, vert_shader)
-        gl.glAttachShader(self.shader_program, frag_shader)
-        gl.glDeleteShader(vert_shader)
-        gl.glDeleteShader(frag_shader)
-
-        # Link shader program
-        gl.glLinkProgram(self.shader_program)
-        result = gl.glGetProgramiv(self.shader_program, gl.GL_LINK_STATUS)
-        if result != gl.GL_TRUE:
-            print("[GLFW Error] {}".format(gl.glGetShaderInfoLog(shader_id)))
-            sys.exit()
-
-        #========================================
         # Prepare Buffers
         #========================================
         # --- Vertex buffer ---
@@ -175,12 +146,47 @@ class Viewer:
                 gl.GL_UNSIGNED_BYTE,  # the type of pixel data
                 image)  # a pointer to the image
 
+        # Set parameters
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_LINEAR)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_LINEAR)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_BORDER)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_BORDER)
 
+        # Unbind
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+
+        #========================================
+        # Prepare Shader Programs
+        #========================================
+        is_loaded: bool = False
+
+        vert_shader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
+        is_loaded = Viewer.load_shader(vert_shader, "glsl/vertex.glsl")
+        if not is_loaded: sys.exit()
+
+        frag_shader = gl.glCreateShader(gl.GL_FRAGMENT_SHADER)
+        is_loaded = Viewer.load_shader(frag_shader, "glsl/fragment.glsl")
+        if not is_loaded: sys.exit()
+
+        # Create shader program
+        self.shader_program = gl.glCreateProgram()
+
+        # Bind shader objects
+        gl.glAttachShader(self.shader_program, vert_shader)
+        gl.glAttachShader(self.shader_program, frag_shader)
+        gl.glDeleteShader(vert_shader)
+        gl.glDeleteShader(frag_shader)
+
+        # Link shader program
+        gl.glLinkProgram(self.shader_program)
+        result = gl.glGetProgramiv(self.shader_program, gl.GL_LINK_STATUS)
+        if result != gl.GL_TRUE:
+            print("[GLFW Error] {}".format(gl.glGetShaderInfoLog(shader_id)))
+            sys.exit()
+
+        # Specify uniform variables
+        gl.glUseProgram(self.shader_program)
+        gl.glUniform1i(gl.glGetUniformLocation(self.shader_program, "sampler"), 0)
 
     def update(self):
         """
@@ -198,6 +204,7 @@ class Viewer:
         gl.glBindVertexArray(self.va_object)
 
         # Bind buffer
+        gl.glActiveTexture(gl.GL_TEXTURE0)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
 
         # Draw
@@ -234,7 +241,7 @@ if __name__ == "__main__":
         1.0, 0.0, 
         0.0, 0.0]
 
-    viewer = Viewer(model_vertices, model_uvmap, "img/naotri_amateur.jpg", "Sample")
+    viewer = Viewer(model_vertices, model_uvmap, "img/invader.png", "Sample")
     while True:
         if not viewer.update():
             print("Exit. ")
