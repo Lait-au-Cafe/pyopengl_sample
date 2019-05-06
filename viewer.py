@@ -32,7 +32,7 @@ class Viewer:
 
         return True
 
-    def __init__(self, window_title = ""):
+    def __init__(self, model_vertices, model_uvmap, texture_filename, window_title):
         """
         @fn __init__()
         @brief Initialization. 
@@ -102,20 +102,15 @@ class Viewer:
         #========================================
         # Prepare Buffers
         #========================================
-        self.model_vertices = [
-                 0.5,  0.5, 0.0, 
-                -0.5,  0.5, 0.0, 
-                 0.5, -0.5, 0.0, 
-                -0.5, -0.5, 0.0]
-
+        # --- Vertex buffer ---
         # Generate & bind buffer
         vertex_buffer = gl.glGenBuffers(1)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, vertex_buffer)
 
         # Allocate memory
-        c_vertex_buffer = (ctypes.c_float*len(self.model_vertices))(*self.model_vertices)
+        c_vertex_buffer = (ctypes.c_float*len(model_vertices))(*model_vertices)
         gl.glBufferData(gl.GL_ARRAY_BUFFER, c_vertex_buffer, gl.GL_STATIC_DRAW)
-        size_expected = ctypes.sizeof(ctypes.c_float) * len(self.model_vertices)
+        size_expected = ctypes.sizeof(ctypes.c_float) * len(model_vertices)
         size_allocated = gl.glGetBufferParameteriv(gl.GL_ARRAY_BUFFER, gl.GL_BUFFER_SIZE)
 
         if size_allocated != size_expected:
@@ -123,20 +118,15 @@ class Viewer:
             gl.glDeleteBuffers(1, vertex_buffer);
             sys.exit()
 
-        self.model_uvs = [
-                1.0, 1.0, 
-                0.0, 1.0, 
-                1.0, 0.0, 
-                0.0, 0.0]
-
+        # --- UV buffer ---
         # Generate & bind buffer
         uv_buffer = gl.glGenBuffers(1)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, uv_buffer)
 
         # Allocate memory
-        c_uv_buffer = (ctypes.c_float*len(self.model_uvs))(*self.model_uvs)
+        c_uv_buffer = (ctypes.c_float*len(model_uvmap))(*model_uvmap)
         gl.glBufferData(gl.GL_ARRAY_BUFFER, c_uv_buffer, gl.GL_STATIC_DRAW)
-        size_expected = ctypes.sizeof(ctypes.c_float) * len(self.model_uvs)
+        size_expected = ctypes.sizeof(ctypes.c_float) * len(model_uvmap)
         size_allocated = gl.glGetBufferParameteriv(gl.GL_ARRAY_BUFFER, gl.GL_BUFFER_SIZE)
 
         if size_allocated != size_expected:
@@ -144,7 +134,7 @@ class Viewer:
             gl.glDeleteBuffers(1, uv_buffer);
             sys.exit()
 
-        # Bind to vertex array object
+        # --- Bind to vertex array object ---
         self.va_object = gl.glGenVertexArrays(1)
         gl.glBindVertexArray(self.va_object)
 
@@ -162,10 +152,9 @@ class Viewer:
         # Prepare Texture
         #========================================
         # Load image
-        image_filename = "img/invader.png"
-        image = cv2.imread(image_filename)
+        image = cv2.imread(texture_filename)
         if image is None:
-            print("[CV Error] Cannot open image: {}".format(image_filename))
+            print("[CV Error] Cannot open image: {}".format(texture_filename))
             sys.exit()
         image = cv2.flip(image, 0)
 
@@ -212,7 +201,7 @@ class Viewer:
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
 
         # Draw
-        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, len(self.model_vertices) // 3)
+        gl.glDrawArrays(gl.GL_TRIANGLE_STRIP, 0, len(model_vertices) // 3)
 
         #display_image = gl.glGetTexImage(gl.GL_TEXTURE_2D, 0, gl.GL_BGR, gl.GL_FLOAT)
         #width = gl.glGetTexLevelParameteriv(gl.GL_TEXTURE_2D, 0, gl.GL_TEXTURE_WIDTH)
@@ -233,7 +222,19 @@ class Viewer:
 
 # Sample Code
 if __name__ == "__main__":
-    viewer = Viewer("Sample")
+    model_vertices = [
+         0.25,  0.5, 0.0, 
+        -0.25,  0.5, 0.0, 
+         0.5, -0.5, 0.0, 
+        -0.5, -0.5, 0.0]
+
+    model_uvmap = [
+        1.0, 1.0, 
+        0.0, 1.0, 
+        1.0, 0.0, 
+        0.0, 0.0]
+
+    viewer = Viewer(model_vertices, model_uvmap, "img/naotri_amateur.jpg", "Sample")
     while True:
         if not viewer.update():
             print("Exit. ")
