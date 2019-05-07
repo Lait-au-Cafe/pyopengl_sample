@@ -42,7 +42,7 @@ class Viewer:
 
         return True
 
-    def update_camera_posture(self):
+    def update_camera_matrix(self):
         # Build MVP matrix
         # Transform matrix
         trans = self.camera_property.translation
@@ -261,8 +261,11 @@ class Viewer:
         if glfw.get_key(self.window, glfw.KEY_ESCAPE) == glfw.PRESS:
             return False
 
+        #========================================
+        # Update the camera matrix
+        #========================================
         self.camera_property.rotation.z += 0.02
-        self.update_camera_posture()
+        self.update_camera_matrix()
 
         #========================================
         # Draw new buffer
