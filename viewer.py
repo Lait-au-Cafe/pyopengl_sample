@@ -1,4 +1,5 @@
 import sys
+import typing
 import dataclasses
 import numpy as np
 import cv2
@@ -15,19 +16,66 @@ class CameraProperty:
 
 
 class Viewer:
+    """
+    @class Viewer
+    @brief A class which deals with the rendering of specified model. 
+    @detail This class renders the model specified in the argument of constructor as model_vertices and mode_uvmap. 
+    """
+
+    """
+    @var window
+    @brief The window object of GLFW. 
+    """
+    window: glfw._GLFWwindow
+
+    """
+    @var window_size
+    @brief The size of the window (width, height). 
+    """
+    window_size: typing.Tuple[int, int]
+
+    """
+    @var camera_property
+    @brief The properties of the camera. 
+    """
+    camera_property: CameraProperty
+
+    """
+    @var va_object
+    @brief The vertext array object of OpenGL which stores model_vertices and model_uvmap. 
+    """
+    va_object: np.uint32
+
+    """
+    @var texture
+    @brief The ID of texture in OpenGL. 
+    """
+    texture: int
+
+    """
+    @var shader_program
+    @brief The ID of shader program in OpenGL. 
+    """
+    shader_program: int
+
     @staticmethod
-    def on_error(code, message):
+    def on_error(code: int, message: str):
         """
         @fn on_error()
         @brief Callback function invoked when glfw encounters errors. 
+        @param code Error code. 
+        @param message Error message. 
         """
         print(f"[GLFW Error] {message} ({code})")
 
     @staticmethod
-    def load_shader(shader_id, filename):
+    def load_shader(shader_id: int, filename: str) -> bool:
         """
         @fn load_shader()
-        @brief Load shader script from file. 
+        @brief Load shader script from a file. 
+        @param shader_id The ID of the shader to which the texture should be bound. 
+        @param filename The filename of a shader file. 
+        @return Whether the loading succeeded. 
         """
         with open(filename) as shader_file:
             shader_code = shader_file.read()
@@ -42,32 +90,57 @@ class Viewer:
         return True
 
     def update_camera_matrix(self):
-        # Build MVP matrix
-        # Perspective matrix
+        """
+        @fn update_camera_matrix()
+        @brief Calculate MVP matrix and upload it to GPU. 
+        """
+        # Calculate the perspective matrix
         perspective_matrix = glm.perspectiveFovLH_NO(
                 glm.radians(self.camera_property.field_of_view), 
                 self.window_size[0], self.window_size[1], 
                 self.camera_property.clipping_distance[0], 
                 self.camera_property.clipping_distance[1])
 
-        # MVP matrix
+        # Compose MVP matrix
         mvp_matrix = perspective_matrix * self.camera_property.transform_matrix
 
         # Upload to uniform variable in the shader
         gl.glUseProgram(self.shader_program)
         gl.glUniformMatrix4fv(gl.glGetUniformLocation(self.shader_program, "mvp_matrix"), 
                 1, gl.GL_FALSE, glm.value_ptr(mvp_matrix))
-        pass
 
-    def window_size_callback(self, window, new_width, new_height):
+    def window_size_callback(self, window: glfw._GLFWwindow, new_width: int, new_height: int):
+        """
+        @fn window_size_callback()
+        @brief The callback function for glfw.set_window_size_callback(). 
+        @param window The ID of the window which is resized. 
+        @param new_width The updated width of the window. 
+        @param new_height The updated height of the window. 
+        """
+        # For the support of retina display, use the framebuffer size instead of the window size. 
         self.window_size = glfw.get_framebuffer_size(self.window)
         self.update_camera_matrix()
         gl.glViewport(0, 0, new_width, new_height)
 
-    def __init__(self, model_vertices, model_uvmap, texture_filename, window_title):
+    def display_all_instance_variables(self):
+        """
+        @fn display_all_instancevariables()
+        @brief For developpers. List up all the instance variables. 
+        """
+        print(" ==== Instance Variables in Viewer ==== ")
+        [print(f"{key}: {type(val)}") for key, val in vars(self).items()]
+        print(" ====================================== ")
+
+    def __init__(self, model_vertices: typing.List[float], model_uvmap: typing.List[float], texture_filename: str, window_title: str):
         """
         @fn __init__()
-        @brief Initialization. 
+        @brief Initialization of viewer.  
+        @param model_vertices The list of vertices in the model. 
+        @param model_uvmap the uvmapping which associate model_vertices with textures
+        @param texture_filename The path to the texture file. 
+        @param window_title The title of the window. 
+        @note The format of model_vertices is [X1, Y1, Z1, X2, Y2, ...]. 
+        @note The format of model_uvmap is [U1, V1, U2, V2, ...]. 
         """
         print("Initializing Viewer...")
 
@@ -256,7 +329,7 @@ class Viewer:
     def update(self):
         """
         @fn update()
-        @brief Update Buffer
+        @brief Update the frame. 
         """
         #========================================
         # Mouse and Keyboard response
