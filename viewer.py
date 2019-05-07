@@ -89,6 +89,25 @@ class Viewer:
 
         return True
 
+    @staticmethod
+    def help():
+        print()
+        print(":======== Window Control ========:")
+        print("Esc: Close the window. ")
+        print("W: Move forward. ")
+        print("A: Move left. ")
+        print("S: Move backward. ")
+        print("D: Move right. ")
+        print("Shift + W: Move up. ")
+        print("Shift + S: Move down. ")
+        print("Up: Face up. ")
+        print("Down: Face down. ")
+        print("Left: Turn left. ")
+        print("Right: Turn right. ")
+        print("Space: Reset the camera position. ")
+        print(":================================:")
+        print()
+
     def update_camera_matrix(self):
         """
         @fn update_camera_matrix()
@@ -325,11 +344,13 @@ class Viewer:
         gl.glUniform1i(gl.glGetUniformLocation(self.shader_program, "sampler"), 0)
 
         print("Initialization done. ")
+        Viewer.help()
 
-    def update(self):
+    def update(self) -> bool:
         """
         @fn update()
         @brief Update the frame. 
+        @return Whether the main loop continues. 
         """
         #========================================
         # Mouse and Keyboard response
