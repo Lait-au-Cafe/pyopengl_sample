@@ -59,12 +59,10 @@ class Viewer:
                 1, gl.GL_FALSE, glm.value_ptr(mvp_matrix))
         pass
 
-    def mouse_callback(self, window, xpos, ypos):
-        #print("[Left: {}] [Right: {}] ({}, {})".format(
-        #    glfw.get_mouse_button(self.window, glfw.MOUSE_BUTTON_LEFT), 
-        #    glfw.get_mouse_button(self.window, glfw.MOUSE_BUTTON_RIGHT), 
-        #    xpos,  ypos))
-        pass
+    def window_size_callback(self, window, new_width, new_height):
+        self.window_size = (new_width, new_height)
+        self.update_camera_matrix()
+        gl.glViewport(0, 0, new_width, new_height)
 
     def __init__(self, model_vertices, model_uvmap, texture_filename, window_title):
         """
@@ -84,6 +82,7 @@ class Viewer:
         #========================================
         # Prepare Window
         #========================================
+        print("- Creating a window...")
         # Window hints
         glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
         glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
@@ -111,11 +110,12 @@ class Viewer:
         #gl.glViewport(0, 0, 480, 480)
 
         # Set callback functions
-        glfw.set_cursor_pos_callback(self.window, self.mouse_callback)
+        glfw.set_window_size_callback(self.window, self.window_size_callback)
 
         #========================================
         # Prepare Buffers
         #========================================
+        print("- Preparing buffers...")
         # --- Vertex buffer ---
         # Generate & bind buffer
         vertex_buffer = gl.glGenBuffers(1)
@@ -165,6 +165,7 @@ class Viewer:
         #========================================
         # Prepare Texture
         #========================================
+        print("- Preparing textures...")
         # Load image
         image = cv2.imread(texture_filename)
         if image is None:
@@ -201,6 +202,7 @@ class Viewer:
         #========================================
         # Prepare Camera Parameters
         #========================================
+        print("- Setting camera parameters...")
         # Transform matrix
         trans = glm.vec3(0.)
         rot = glm.vec3(0.)
@@ -218,6 +220,7 @@ class Viewer:
         #========================================
         # Prepare Shader Programs
         #========================================
+        print("- Preparing shaders...")
         is_loaded: bool = False
 
         vert_shader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
@@ -247,6 +250,8 @@ class Viewer:
         # Specify uniform variables
         gl.glUseProgram(self.shader_program)
         gl.glUniform1i(gl.glGetUniformLocation(self.shader_program, "sampler"), 0)
+
+        print("Initialization done. ")
 
     def update(self):
         """
