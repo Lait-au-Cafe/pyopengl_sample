@@ -11,7 +11,6 @@ import ctypes
 class CameraProperty:
             translation: glm.vec3
             rotation: glm.vec3
-            focal_length: float
             clipping_distance: glm.vec2
             field_of_view: float
 
@@ -44,6 +43,30 @@ class Viewer:
         return True
 
     def update_camera_posture(self):
+        # Build MVP matrix
+        # Transform matrix
+        trans = self.camera_property.translation
+        rot = self.camera_property.rotation
+        transform_matrix = glm.mat4(1.)
+        transform_matrix = glm.translate(transform_matrix, trans)
+        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.x), glm.vec3(1., 0., 0.))
+        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.y), glm.vec3(0., 1., 0.))
+        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.z), glm.vec3(0., 0., 1.))
+
+        # Perspective matrix
+        perspective_matrix = glm.perspectiveFovLH_NO(
+                glm.radians(self.camera_property.field_of_view), 
+                self.window_size[0], self.window_size[1], 
+                self.camera_property.clipping_distance[0], 
+                self.camera_property.clipping_distance[1])
+
+        # MVP matrix
+        mvp_matrix = perspective_matrix * transform_matrix
+
+        # Upload to uniform variable in the shader
+        gl.glUseProgram(self.shader_program)
+        gl.glUniformMatrix4fv(gl.glGetUniformLocation(self.shader_program, "mvp_matrix"), 
+                1, gl.GL_FALSE, glm.value_ptr(mvp_matrix))
         pass
 
     def mouse_callback(self, window, xpos, ypos):
@@ -110,7 +133,7 @@ class Viewer:
 
         # Allocate memory
         c_vertex_buffer = (ctypes.c_float*len(model_vertices))(*model_vertices)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, c_vertex_buffer, gl.GL_STATIC_DRAW)
+        gl.glBufferData(gl.GL_ARRAY_BUFFER, c_vertex_buffer, gl.GL_DYNAMIC_DRAW)
         size_expected = ctypes.sizeof(ctypes.c_float) * len(model_vertices)
         size_allocated = gl.glGetBufferParameteriv(gl.GL_ARRAY_BUFFER, gl.GL_BUFFER_SIZE)
 
@@ -126,7 +149,7 @@ class Viewer:
 
         # Allocate memory
         c_uv_buffer = (ctypes.c_float*len(model_uvmap))(*model_uvmap)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, c_uv_buffer, gl.GL_STATIC_DRAW)
+        gl.glBufferData(gl.GL_ARRAY_BUFFER, c_uv_buffer, gl.GL_DYNAMIC_DRAW)
         size_expected = ctypes.sizeof(ctypes.c_float) * len(model_uvmap)
         size_allocated = gl.glGetBufferParameteriv(gl.GL_ARRAY_BUFFER, gl.GL_BUFFER_SIZE)
 
@@ -186,34 +209,13 @@ class Viewer:
         gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
 
         #========================================
-        # Prepare Camera Parameter Matrix
+        # Prepare Camera Parameters
         #========================================
         self.camera_property = CameraProperty(
             translation = glm.vec3(0., 0., 10.), 
             rotation = glm.vec3(0., 0., 0.), 
-            focal_length = 20., 
             clipping_distance = glm.vec2(0.1, 100.), 
             field_of_view = 60.)
-
-        # Transform matrix
-        trans = self.camera_property.translation
-        rot = self.camera_property.rotation
-        transform_matrix = glm.mat4(1.)
-        transform_matrix = glm.translate(transform_matrix, trans)
-        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.x), glm.vec3(1., 0., 0.))
-        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.y), glm.vec3(0., 1., 0.))
-        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.z), glm.vec3(0., 0., 1.))
-
-        # Perspective matrix
-        perspective_matrix = glm.perspectiveFovLH_NO(
-                glm.radians(self.camera_property.field_of_view), 
-                self.window_size[0], self.window_size[1], 
-                self.camera_property.clipping_distance[0], 
-                self.camera_property.clipping_distance[1])
-
-        # MVP matrix
-        #mvp_matrix = perspective_matrix * glm.lookAt(glm.vec3(0, 0, -5), glm.vec3(0, 0, 0), glm.vec3(0, 1, 0)) * transform_matrix
-        mvp_matrix = perspective_matrix * transform_matrix
 
         #========================================
         # Prepare Shader Programs
@@ -247,14 +249,6 @@ class Viewer:
         # Specify uniform variables
         gl.glUseProgram(self.shader_program)
         gl.glUniform1i(gl.glGetUniformLocation(self.shader_program, "sampler"), 0)
-        for i in range(0, len(model_vertices), 3):
-            pos = mvp_matrix * glm.vec4(
-                    model_vertices[i], model_vertices[i+1], model_vertices[i+2],  1.)
-            print(np.array([pos.x, pos.y, pos.z, pos.w]))
-            print(np.array([pos.x, pos.y, pos.z]) / pos.w)
-            print(np.array([pos.x, pos.y]) / pos.z)
-        gl.glUniformMatrix4fv(gl.glGetUniformLocation(self.shader_program, "mvp_matrix"), 
-                1, gl.GL_FALSE, glm.value_ptr(perspective_matrix))
 
     def update(self):
         """
@@ -267,6 +261,8 @@ class Viewer:
         if glfw.get_key(self.window, glfw.KEY_ESCAPE) == glfw.PRESS:
             return False
 
+        self.camera_property.rotation.z += 0.02
+        self.update_camera_posture()
 
         #========================================
         # Draw new buffer
