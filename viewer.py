@@ -60,7 +60,7 @@ class Viewer:
         pass
 
     def window_size_callback(self, window, new_width, new_height):
-        self.window_size = (new_width, new_height)
+        self.window_size = glfw.get_framebuffer_size(self.window)
         self.update_camera_matrix()
         gl.glViewport(0, 0, new_width, new_height)
 
@@ -82,7 +82,7 @@ class Viewer:
         #========================================
         # Prepare Window
         #========================================
-        print("- Creating a window...")
+        print("- Creating a window.")
         # Window hints
         glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
         glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
@@ -115,7 +115,7 @@ class Viewer:
         #========================================
         # Prepare Buffers
         #========================================
-        print("- Preparing buffers...")
+        print("- Preparing buffers.")
         # --- Vertex buffer ---
         # Generate & bind buffer
         vertex_buffer = gl.glGenBuffers(1)
@@ -165,7 +165,7 @@ class Viewer:
         #========================================
         # Prepare Texture
         #========================================
-        print("- Preparing textures...")
+        print("- Preparing textures.")
         # Load image
         image = cv2.imread(texture_filename)
         if image is None:
@@ -202,7 +202,7 @@ class Viewer:
         #========================================
         # Prepare Camera Parameters
         #========================================
-        print("- Setting camera parameters...")
+        print("- Setting camera parameters.")
         # Transform matrix
         trans = glm.vec3(0.)
         rot = glm.vec3(0.)
@@ -220,7 +220,7 @@ class Viewer:
         #========================================
         # Prepare Shader Programs
         #========================================
-        print("- Preparing shaders...")
+        print("- Preparing shaders.")
         is_loaded: bool = False
 
         vert_shader = gl.glCreateShader(gl.GL_VERTEX_SHADER)
