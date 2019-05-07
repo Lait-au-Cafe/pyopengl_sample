@@ -9,10 +9,9 @@ import ctypes
 
 @dataclasses.dataclass
 class CameraProperty:
-            translation: glm.vec3
-            rotation: glm.vec3
-            clipping_distance: glm.vec2
-            field_of_view: float
+    transform_matrix: glm.mat4
+    clipping_distance: glm.vec2
+    field_of_view: float
 
 
 class Viewer:
@@ -44,15 +43,6 @@ class Viewer:
 
     def update_camera_matrix(self):
         # Build MVP matrix
-        # Transform matrix
-        trans = -self.camera_property.translation
-        rot = self.camera_property.rotation
-        transform_matrix = glm.mat4(1.)
-        transform_matrix = glm.translate(transform_matrix, trans)
-        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.x), glm.vec3(1., 0., 0.))
-        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.y), glm.vec3(0., 1., 0.))
-        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.z), glm.vec3(0., 0., 1.))
-
         # Perspective matrix
         perspective_matrix = glm.perspectiveFovLH_NO(
                 glm.radians(self.camera_property.field_of_view), 
@@ -61,7 +51,7 @@ class Viewer:
                 self.camera_property.clipping_distance[1])
 
         # MVP matrix
-        mvp_matrix = perspective_matrix * transform_matrix
+        mvp_matrix = perspective_matrix * self.camera_property.transform_matrix
 
         # Upload to uniform variable in the shader
         gl.glUseProgram(self.shader_program)
@@ -211,10 +201,18 @@ class Viewer:
         #========================================
         # Prepare Camera Parameters
         #========================================
+        # Transform matrix
+        trans = glm.vec3(0.)
+        rot = glm.vec3(0.)
+        transform_matrix = glm.mat4(1.)
+        transform_matrix = glm.translate(transform_matrix, trans)
+        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.x), glm.vec3(1., 0., 0.))
+        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.y), glm.vec3(0., 1., 0.))
+        transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.z), glm.vec3(0., 0., 1.))
+
         self.camera_property = CameraProperty(
-            translation = glm.vec3(0., 0., 10.), 
-            rotation = glm.vec3(0., 0., 0.), 
-            clipping_distance = glm.vec2(10., 100.), 
+            transform_matrix = transform_matrix, 
+            clipping_distance = glm.vec2(10., 1000.), 
             field_of_view = 60.)
 
         #========================================
@@ -258,27 +256,47 @@ class Viewer:
         #========================================
         # Mouse and Keyboard response
         #========================================
+        # Exit
         if glfw.get_key(self.window, glfw.KEY_ESCAPE) == glfw.PRESS:
             return False
-        elif glfw.get_key(self.window, glfw.KEY_W) == glfw.PRESS:
-            self.camera_property.translation.z += 0.01
-        elif glfw.get_key(self.window, glfw.KEY_S) == glfw.PRESS:
-            self.camera_property.translation.z -= 0.01
-        elif glfw.get_key(self.window, glfw.KEY_D) == glfw.PRESS:
-            self.camera_property.translation.x += 0.01
-        elif glfw.get_key(self.window, glfw.KEY_A) == glfw.PRESS:
-            self.camera_property.translation.x -= 0.01
-        elif glfw.get_key(self.window, glfw.KEY_UP) == glfw.PRESS:
-            self.camera_property.rotation.x += 0.01
-        elif glfw.get_key(self.window, glfw.KEY_DOWN) == glfw.PRESS:
-            self.camera_property.rotation.x -= 0.01
-        elif glfw.get_key(self.window, glfw.KEY_LEFT) == glfw.PRESS:
-            self.camera_property.rotation.y += 0.01
-        elif glfw.get_key(self.window, glfw.KEY_RIGHT) == glfw.PRESS:
-            self.camera_property.rotation.y -= 0.01
-        elif glfw.get_key(self.window, glfw.KEY_SPACE) == glfw.PRESS:
-            self.camera_property.translation = glm.vec3(0.)
-            self.camera_property.rotation = glm.vec3(0.)
+
+        # Camera motion
+        if glfw.get_key(self.window, glfw.KEY_SPACE) == glfw.PRESS:
+            self.camera_property.transform_matrix = glm.mat4(1.)
+        else:
+            trans = glm.vec3(0.)
+            rot = glm.vec3(0.)
+            trans_delta = 0.01
+            rot_delta = 0.005
+            if glfw.get_key(self.window, glfw.KEY_W) == glfw.PRESS:
+                if glfw.get_key(self.window, glfw.KEY_LEFT_SHIFT) != glfw.PRESS:
+                    trans.z += trans_delta
+                else:
+                    trans.y += trans_delta
+            if glfw.get_key(self.window, glfw.KEY_S) == glfw.PRESS:
+                if glfw.get_key(self.window, glfw.KEY_LEFT_SHIFT) != glfw.PRESS:
+                    trans.z -= trans_delta
+                else:
+                    trans.y -= trans_delta
+            if glfw.get_key(self.window, glfw.KEY_D) == glfw.PRESS:
+                trans.x += trans_delta
+            if glfw.get_key(self.window, glfw.KEY_A) == glfw.PRESS:
+                trans.x -= trans_delta
+            if glfw.get_key(self.window, glfw.KEY_UP) == glfw.PRESS:
+                rot.x += rot_delta
+            if glfw.get_key(self.window, glfw.KEY_DOWN) == glfw.PRESS:
+                rot.x -= rot_delta
+            if glfw.get_key(self.window, glfw.KEY_LEFT) == glfw.PRESS:
+                rot.y += rot_delta
+            if glfw.get_key(self.window, glfw.KEY_RIGHT) == glfw.PRESS:
+                rot.y -= rot_delta
+
+            tmat = glm.mat4(1.)
+            tmat = glm.translate(tmat, -trans)
+            tmat = glm.rotate(tmat, glm.radians(rot.x), glm.vec3(1., 0., 0.))
+            tmat = glm.rotate(tmat, glm.radians(rot.y), glm.vec3(0., 1., 0.))
+            tmat = glm.rotate(tmat, glm.radians(rot.z), glm.vec3(0., 0., 1.))
+            self.camera_property.transform_matrix = tmat * self.camera_property.transform_matrix
 
         #========================================
         # Update the camera matrix
