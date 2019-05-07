@@ -1,2 +1,5 @@
 glfw==1.7.1
+numpy==1.16.3
+opencv-python==4.1.0.25
+PyGLM==0.5.2b1
 PyOpenGL==3.1.0
