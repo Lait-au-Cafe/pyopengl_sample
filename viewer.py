@@ -45,7 +45,7 @@ class Viewer:
     def update_camera_matrix(self):
         # Build MVP matrix
         # Transform matrix
-        trans = self.camera_property.translation
+        trans = -self.camera_property.translation
         rot = self.camera_property.rotation
         transform_matrix = glm.mat4(1.)
         transform_matrix = glm.translate(transform_matrix, trans)
@@ -214,7 +214,7 @@ class Viewer:
         self.camera_property = CameraProperty(
             translation = glm.vec3(0., 0., 10.), 
             rotation = glm.vec3(0., 0., 0.), 
-            clipping_distance = glm.vec2(0.1, 100.), 
+            clipping_distance = glm.vec2(10., 100.), 
             field_of_view = 60.)
 
         #========================================
@@ -260,11 +260,29 @@ class Viewer:
         #========================================
         if glfw.get_key(self.window, glfw.KEY_ESCAPE) == glfw.PRESS:
             return False
+        elif glfw.get_key(self.window, glfw.KEY_W) == glfw.PRESS:
+            self.camera_property.translation.z += 0.01
+        elif glfw.get_key(self.window, glfw.KEY_S) == glfw.PRESS:
+            self.camera_property.translation.z -= 0.01
+        elif glfw.get_key(self.window, glfw.KEY_D) == glfw.PRESS:
+            self.camera_property.translation.x += 0.01
+        elif glfw.get_key(self.window, glfw.KEY_A) == glfw.PRESS:
+            self.camera_property.translation.x -= 0.01
+        elif glfw.get_key(self.window, glfw.KEY_UP) == glfw.PRESS:
+            self.camera_property.rotation.x += 0.01
+        elif glfw.get_key(self.window, glfw.KEY_DOWN) == glfw.PRESS:
+            self.camera_property.rotation.x -= 0.01
+        elif glfw.get_key(self.window, glfw.KEY_LEFT) == glfw.PRESS:
+            self.camera_property.rotation.y += 0.01
+        elif glfw.get_key(self.window, glfw.KEY_RIGHT) == glfw.PRESS:
+            self.camera_property.rotation.y -= 0.01
+        elif glfw.get_key(self.window, glfw.KEY_SPACE) == glfw.PRESS:
+            self.camera_property.translation = glm.vec3(0.)
+            self.camera_property.rotation = glm.vec3(0.)
 
         #========================================
         # Update the camera matrix
         #========================================
-        self.camera_property.rotation.z += 0.02
         self.update_camera_matrix()
 
         #========================================
