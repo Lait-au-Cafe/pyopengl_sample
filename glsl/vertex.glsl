@@ -10,8 +10,6 @@ uniform mat4 mvp_matrix;
 out vec2 uvpos;
 
 void main(){
-	//gl_Position = mvp_matrix * vec4(position, 1);
-	vec4 pos = mvp_matrix * vec4(position, 1);
-	gl_Position = vec4(pos.x / pos.z, pos.y / pos.z, 0, 1);
+	gl_Position = mvp_matrix * vec4(position, 1);
 	uvpos = vertex_uv;
 }

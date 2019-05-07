@@ -318,11 +318,6 @@ class Viewer:
 
 # Sample Code
 if __name__ == "__main__":
-    #model_vertices = [
-    #     0.5,  0.5, 0.0, 
-    #    -0.5,  0.5, 0.0, 
-    #     0.5, -0.5, 0.0, 
-    #    -0.5, -0.5, 0.0]
     model_vertices = [
          10,  10, 50.0, 
         -10,  10, 50.0, 
