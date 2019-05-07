@@ -22,7 +22,7 @@ class Viewer:
         @fn on_error()
         @brief Callback function invoked when glfw encounters errors. 
         """
-        print("[GLFW Error] {} ({})".format(message, code))
+        print(f"[GLFW Error] {message} ({code})")
 
     @staticmethod
     def load_shader(shader_id, filename):
@@ -37,7 +37,7 @@ class Viewer:
 
             result = gl.glGetShaderiv(shader_id, gl.GL_COMPILE_STATUS)
             if result != gl.GL_TRUE:
-                print("[GLFW Error] {}".format(gl.glGetShaderInfoLog(shader_id)))
+                print(f"[GLFW Error] {gl.glGetShaderInfoLog(shader_id)}")
                 return False
 
         return True
@@ -178,7 +178,7 @@ class Viewer:
         # Load image
         image = cv2.imread(texture_filename)
         if image is None:
-            print("[CV Error] Cannot open image: {}".format(texture_filename))
+            print(f"[CV Error] Cannot open image: {texture_filename}")
             sys.exit()
         image = cv2.flip(image, 0)
 
@@ -243,7 +243,7 @@ class Viewer:
         gl.glLinkProgram(self.shader_program)
         result = gl.glGetProgramiv(self.shader_program, gl.GL_LINK_STATUS)
         if result != gl.GL_TRUE:
-            print("[GLFW Error] {}".format(gl.glGetShaderInfoLog(shader_id)))
+            print(f"[GLFW Error] {gl.glGetShaderInfoLog(shader_id)}")
             sys.exit()
 
         # Specify uniform variables
