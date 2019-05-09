@@ -1,5 +1,4 @@
 import sys
-import copy
 import typing
 import dataclasses
 import numpy as np
@@ -117,6 +116,7 @@ class Viewer:
         print("Esc: Close the window. ")
         print("Left-Drag: Panning. ")
         print("Right-Drag: Rotate around the origin. ")
+        print("Scroll: Zoom-in/out. ")
         print("W: Move forward. ")
         print("A: Move left. ")
         print("S: Move backward. ")
@@ -163,6 +163,22 @@ class Viewer:
         self.window_size = glfw.get_framebuffer_size(self.window)
         self.update_camera_matrix()
         gl.glViewport(0, 0, new_width, new_height)
+
+    def mouse_scroll_callback(self, window: glfw._GLFWwindow, x_offset: float, y_offset: float):
+        """
+        @fn mouse_scroll_callback()
+        @brief The callback function for glfw.set_sroll_callback(). 
+        @param window The ID of the window which is resized. 
+        @param x_offset The offset along x axis. 
+        @param y_offset The offset along y axis. 
+        """
+        if y_offset != 0.:
+            if y_offset > 0.:
+                tmat = glm.scale(glm.mat4(1.), glm.vec3(1.25))
+            else:
+                tmat = glm.scale(glm.mat4(1.), glm.vec3(0.8))
+            self.camera_property.transform_matrix = self.camera_property.transform_matrix * tmat
+            self.update_camera_matrix()
 
     def display_all_instance_variables(self):
         """
@@ -226,6 +242,7 @@ class Viewer:
 
         # Set callback functions
         glfw.set_window_size_callback(self.window, self.window_size_callback)
+        glfw.set_scroll_callback(self.window, self.mouse_scroll_callback)
 
         #========================================
         # Prepare Buffers
