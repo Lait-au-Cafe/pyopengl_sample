@@ -1,4 +1,5 @@
 import sys
+import copy
 import typing
 import dataclasses
 import numpy as np
@@ -14,6 +15,20 @@ class CameraProperty:
     clipping_distance: glm.vec2
     field_of_view: float
 
+    def clone(self):
+        """
+        @fn clone()
+        @brief Make a deep copy of an instance. 
+        """
+        return CameraProperty(
+                transform_matrix = glm.mat4(self.transform_matrix), 
+                clipping_distance = glm.vec2(self.clipping_distance), 
+                field_of_view = self.field_of_view)
+
+@dataclasses.dataclass
+class CursorStatus:
+    button: typing.Dict[int, bool]
+    position: glm.vec2
 
 class Viewer:
     """
@@ -39,6 +54,12 @@ class Viewer:
     @brief The properties of the camera. 
     """
     camera_property: CameraProperty
+
+    """
+    @var default_camera_property
+    @brief The default properties of the camera. 
+    """
+    default_camera_property: CameraProperty
 
     """
     @var va_object
@@ -94,6 +115,8 @@ class Viewer:
         print()
         print(":======== Window Control ========:")
         print("Esc: Close the window. ")
+        print("Left-Drag: Panning. ")
+        print("Right-Drag: Rotate around the origin. ")
         print("W: Move forward. ")
         print("A: Move left. ")
         print("S: Move backward. ")
@@ -296,7 +319,7 @@ class Viewer:
         #========================================
         print("- Setting camera parameters.")
         # Transform matrix
-        trans = glm.vec3(0.)
+        trans = glm.vec3(0., 0., 50.)
         rot = glm.vec3(0.)
         transform_matrix = glm.mat4(1.)
         transform_matrix = glm.translate(transform_matrix, trans)
@@ -304,10 +327,12 @@ class Viewer:
         transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.y), glm.vec3(0., 1., 0.))
         transform_matrix = glm.rotate(transform_matrix, glm.radians(rot.z), glm.vec3(0., 0., 1.))
 
-        self.camera_property = CameraProperty(
+        self.default_camera_property = CameraProperty(
             transform_matrix = transform_matrix, 
             clipping_distance = glm.vec2(10., 1000.), 
             field_of_view = 60.)
+
+        self.camera_property = self.default_camera_property.clone()
 
         #========================================
         # Prepare Shader Programs
@@ -343,6 +368,16 @@ class Viewer:
         gl.glUseProgram(self.shader_program)
         gl.glUniform1i(gl.glGetUniformLocation(self.shader_program, "sampler"), 0)
 
+        #========================================
+        # Prepare Other Instance Variables
+        #========================================
+        # Cursor status
+        self.previous_cursor_status = CursorStatus(
+                button = {
+                    glfw.MOUSE_BUTTON_LEFT: False, 
+                    glfw.MOUSE_BUTTON_RIGHT: False}, 
+                position = glm.vec3(0.))
+
         print("Initialization done. ")
         Viewer.help()
 
@@ -359,9 +394,9 @@ class Viewer:
         if glfw.get_key(self.window, glfw.KEY_ESCAPE) == glfw.PRESS:
             return False
 
-        # Camera motion
+        # Camera motion (keyboard)
         if glfw.get_key(self.window, glfw.KEY_SPACE) == glfw.PRESS:
-            self.camera_property.transform_matrix = glm.mat4(1.)
+            self.camera_property = self.default_camera_property.clone()
         else:
             trans = glm.vec3(0.)
             rot = glm.vec3(0.)
@@ -396,6 +431,44 @@ class Viewer:
             tmat = glm.rotate(tmat, glm.radians(rot.y), glm.vec3(0., 1., 0.))
             tmat = glm.rotate(tmat, glm.radians(rot.z), glm.vec3(0., 0., 1.))
             self.camera_property.transform_matrix = tmat * self.camera_property.transform_matrix
+
+        # Camera motion (mouse)
+        current_cursor_status = CursorStatus(
+                button = {
+                    glfw.MOUSE_BUTTON_LEFT: False, 
+                    glfw.MOUSE_BUTTON_RIGHT: False}, 
+                position = None)
+
+        # Acquire current cursor status
+        if glfw.get_mouse_button(self.window, glfw.MOUSE_BUTTON_LEFT) == glfw.PRESS:
+            current_cursor_status.button[glfw.MOUSE_BUTTON_LEFT] = True
+        if glfw.get_mouse_button(self.window, glfw.MOUSE_BUTTON_RIGHT) == glfw.PRESS:
+            current_cursor_status.button[glfw.MOUSE_BUTTON_RIGHT] = True
+        current_cursor_status.position = glm.vec2(glfw.get_cursor_pos(self.window))
+
+        # Compare current status with previous one
+        if current_cursor_status.button[glfw.MOUSE_BUTTON_LEFT]\
+                and self.previous_cursor_status.button[glfw.MOUSE_BUTTON_LEFT]\
+                and not current_cursor_status.button[glfw.MOUSE_BUTTON_RIGHT]\
+                and not self.previous_cursor_status.button[glfw.MOUSE_BUTTON_RIGHT]:
+                    displ = current_cursor_status.position - self.previous_cursor_status.position
+                    displ *= 0.01  # scaling
+                    displ = glm.vec3(displ.x, -displ.y, 0.)  # 2D -> 3D
+                    tmat = glm.translate(glm.mat4(1.),  displ)
+                    self.camera_property.transform_matrix = tmat * self.camera_property.transform_matrix
+
+        elif current_cursor_status.button[glfw.MOUSE_BUTTON_RIGHT]\
+                and self.previous_cursor_status.button[glfw.MOUSE_BUTTON_RIGHT]\
+                and not current_cursor_status.button[glfw.MOUSE_BUTTON_LEFT]\
+                and not self.previous_cursor_status.button[glfw.MOUSE_BUTTON_LEFT]:
+                    displ = current_cursor_status.position - self.previous_cursor_status.position
+                    displ *= -0.1  # scaling
+                    displ = glm.vec3(displ.y, displ.x, 0.)  # 2D -> 3D
+                    if glm.length(displ) != 0:
+                        tmat = glm.rotate(glm.mat4(1.), glm.radians(glm.length(displ)),  glm.normalize(displ))
+                        self.camera_property.transform_matrix = self.camera_property.transform_matrix * tmat
+
+        self.previous_cursor_status = current_cursor_status
 
         #========================================
         # Update the camera matrix
@@ -436,10 +509,10 @@ class Viewer:
 # Sample Code
 if __name__ == "__main__":
     model_vertices = [
-         10,  10, 50.0, 
-        -10,  10, 50.0, 
-         10, -10, 50.0, 
-        -10, -10, 50.0]
+         10,  10, 0., 
+        -10,  10, 0., 
+         10, -10, 0., 
+        -10, -10, 0.]
 
     model_uvmap = [
         1.0, 1.0, 
